@@ -49,12 +49,12 @@ public class TopicoController {
         return ResponseEntity.created(url).body(datosRespuestaTopico);
     }
 
-    @GetMapping
+    @GetMapping("/listar-topico")
     public ResponseEntity<List<DatosListaTopico>> listaTopicos() {
         // Implementa la lógica para obtener una lista de tópicos y retornarla en una ResponseEntity
         List<Topico> topicos = topicoRepository.findAll();
         List<DatosListaTopico> datosListaTopicos = topicos.stream()
-                .map(topico -> new DatosListaTopico(topico.getId(), topico.getTitulo(), topico.getMensaje()))
+                .map(topico -> new DatosListaTopico(topico.getId(),topico.getMensaje(), topico.getTitulo(),topico.getFechaCreacion(), topico.getMensaje()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok().body(datosListaTopicos);
     }
