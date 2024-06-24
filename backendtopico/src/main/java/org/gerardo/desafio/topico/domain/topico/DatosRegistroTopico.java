@@ -20,9 +20,13 @@ public record DatosRegistroTopico(
         @NotBlank
         String status,
 
+
+        String autor,
+
         @NotNull
-        @NotBlank
-        String autor
+        Long idCurso
+
+
 
 ) {
 }

@@ -1,16 +1,18 @@
 package org.gerardo.desafio.topico.controller;
+
 import jakarta.validation.Valid;
 import org.gerardo.desafio.topico.domain.curso.Curso;
 import org.gerardo.desafio.topico.domain.curso.CursoRepository;
 import org.gerardo.desafio.topico.domain.topico.*;
+import org.gerardo.desafio.topico.infra.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-
 import java.net.URI;
-import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/topicos")
@@ -20,45 +22,40 @@ public class TopicoController {
     private TopicoRepository topicoRepository;
 
     @Autowired
-    private CursoRepository cursoRepository; // Asumiendo que tienes un repositorio para Curso
+    private CursoRepository cursoRepository;
 
     @PostMapping("/crear-topico")
-    public ResponseEntity<DatosRespuestaTopico> registrarTopico(@RequestBody @Valid DatosRegistroTopico datosRegistroTopico, UriComponentsBuilder uriComponentsBuilder) {
-        // Asumiendo que datosRegistroTopico no tiene un campo curso directamente, sino que se maneja de otra manera
+    public ResponseEntity<DatosRespuestaTopico> registrarTopico(@RequestBody @Valid DatosRegistroTopico datosRegistroTopico,
+                                                                UriComponentsBuilder uriComponentsBuilder) {
 
+        // Primero, obtenemos el curso asociado al tópico
+        Curso curso = cursoRepository.findById(datosRegistroTopico.idCurso())
+                .orElseThrow(() -> new ResourceNotFoundException("Curso no encontrado con ID: " + datosRegistroTopico.idCurso()));
 
-        // Crear un nuevo Topico
-        Topico topico = new Topico();
-        topico.setTitulo(datosRegistroTopico.titulo());
-        topico.setMensaje(datosRegistroTopico.mensaje());
-        topico.setFechaCreacion(datosRegistroTopico.fechaCreacion() != null ? datosRegistroTopico.fechaCreacion() : LocalDateTime.now());
-        topico.setStatus(datosRegistroTopico.status());
-        topico.setAutor(datosRegistroTopico.autor());
+        // Creamos una instancia de Topico usando el constructor que acepta DatosRegistroTopico y Curso
+        Topico nuevoTopico = new Topico(datosRegistroTopico, curso);
 
+        // Guardamos el nuevo tópico en la base de datos
+        nuevoTopico = topicoRepository.save(nuevoTopico);
 
-        // Guardar el nuevo tópico en la base de datos
-        Topico nuevoTopico = topicoRepository.save(topico);
+        // Creamos la respuesta de datos
+        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(nuevoTopico.getId(), nuevoTopico.getTitulo(),
+                nuevoTopico.getMensaje(), nuevoTopico.getFechaCreacion(), nuevoTopico.getStatus(), nuevoTopico.getAutor());
 
-        // Preparar la respuesta con los datos del nuevo tópico creado
-        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(
-                nuevoTopico.getId(),
-                nuevoTopico.getTitulo(),
-                nuevoTopico.getMensaje(),
-                nuevoTopico.getFechaCreacion(),
-                nuevoTopico.getStatus(),
-                nuevoTopico.getAutor()
-        );
-
-        // Construir la URL de respuesta
+        // Construimos la URL de la respuesta
         URI url = uriComponentsBuilder.path("/topicos/{id}").buildAndExpand(nuevoTopico.getId()).toUri();
 
-        // Retornar una respuesta con el código HTTP 201 Created y los datos del nuevo tópico
+        // Retornamos una respuesta con estado CREATED (201) y la URL de la ubicación del nuevo recurso
         return ResponseEntity.created(url).body(datosRespuestaTopico);
     }
 
     @GetMapping
-    public ResponseEntity<DatosListaTopico> listaTopicos() {
-        // Aquí implementa la lógica para obtener una lista de tópicos y retornarla en una ResponseEntity
-        return null; // Por ahora se retorna null, deberías implementar esta lógica según tu necesidad
+    public ResponseEntity<List<DatosListaTopico>> listaTopicos() {
+        // Implementa la lógica para obtener una lista de tópicos y retornarla en una ResponseEntity
+        List<Topico> topicos = topicoRepository.findAll();
+        List<DatosListaTopico> datosListaTopicos = topicos.stream()
+                .map(topico -> new DatosListaTopico(topico.getId(), topico.getTitulo(), topico.getMensaje()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok().body(datosListaTopicos);
     }
 }

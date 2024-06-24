@@ -1,7 +1,6 @@
 package org.gerardo.desafio.topico.domain.topico;
 
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.gerardo.desafio.topico.domain.curso.Curso;
