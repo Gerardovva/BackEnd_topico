@@ -22,9 +22,7 @@ public record DatosRegistroTopico(
 
         @NotNull
         @NotBlank
-        String autor,
+        String autor
 
-        @NotNull
-        Curso curso
 ) {
 }

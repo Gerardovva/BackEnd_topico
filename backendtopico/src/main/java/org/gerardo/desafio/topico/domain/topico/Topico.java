@@ -3,10 +3,7 @@ package org.gerardo.desafio.topico.domain.topico;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.gerardo.desafio.topico.domain.curso.Curso;
 
 
@@ -15,6 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "topicos")
 @Entity(name = "topico")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
