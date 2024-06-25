@@ -8,6 +8,9 @@ public record DatosListaTopico(
         String mensaje,
         String nombre,
         LocalDateTime fechaCreacion,
-        String autor
-) {
+        String autor) {
+
+    public DatosListaTopico(Topico topico){
+        this(topico.getId(),topico.getMensaje(), topico.getTitulo(), topico.getFechaCreacion(), topico.getAutor());
+    }
 }

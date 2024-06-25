@@ -1,28 +1,33 @@
 package org.gerardo.desafio.topico.controller;
 
+
 import jakarta.validation.Valid;
 import org.gerardo.desafio.topico.domain.curso.Curso;
 import org.gerardo.desafio.topico.domain.curso.CursoRepository;
 import org.gerardo.desafio.topico.domain.topico.*;
 import org.gerardo.desafio.topico.infra.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/topicos")
 public class TopicoController {
 
-    @Autowired
-    private TopicoRepository topicoRepository;
+
 
     @Autowired
     private CursoRepository cursoRepository;
+
+    @Autowired
+    private TopicoRepository topicoRepository;
+
 
     @PostMapping("/crear-topico")
     public ResponseEntity<DatosRespuestaTopico> registrarTopico(@RequestBody @Valid DatosRegistroTopico datosRegistroTopico,
@@ -49,6 +54,24 @@ public class TopicoController {
         return ResponseEntity.created(url).body(datosRespuestaTopico);
     }
 
+
+        @GetMapping("/listar-topico")
+        public ResponseEntity<Page<DatosListaTopico>> listadoTopicos(@PageableDefault(size = 10) Pageable pageable) {
+
+            return ResponseEntity.ok(topicoRepository.findByActivoTrue(pageable).map(DatosListaTopico::new));
+        }
+
+
+
+    @PutMapping("/actualizar-topico")
+    public ResponseEntity actualizar() {
+        return null;
+    }
+}
+
+
+
+   /*
     @GetMapping("/listar-topico")
     public ResponseEntity<List<DatosListaTopico>> listaTopicos() {
         // Implementa la lógica para obtener una lista de tópicos y retornarla en una ResponseEntity
@@ -57,5 +80,23 @@ public class TopicoController {
                 .map(topico -> new DatosListaTopico(topico.getId(),topico.getMensaje(), topico.getTitulo(),topico.getFechaCreacion(), topico.getMensaje()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok().body(datosListaTopicos);
-    }
-}
+    } */
+
+   /* @GetMapping("/listar-topico")
+    public ResponseEntity<Page<DatosListaTopico>> listaTopicos(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Topico> topicosPage = topicoRepository.findAll(pageable);
+
+        // Mapear los tópicos de la página a DatosListaTopico
+        Page<DatosListaTopico> datosListaTopicos = topicosPage.map(topico ->
+                new DatosListaTopico(
+                        topico.getId(),
+                        topico.getTitulo(),
+                        topico.getMensaje(),
+                        topico.getFechaCreacion(),
+                        topico.getAutor()
+                )
+        );
+
+        return ResponseEntity.ok().body(datosListaTopicos);
+    }*/
+
