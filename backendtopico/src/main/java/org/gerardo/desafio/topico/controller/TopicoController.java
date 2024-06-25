@@ -74,6 +74,7 @@ public class TopicoController {
         return ResponseEntity.created(url).body(datosRespuestaTopico);
     }
 
+    //metodo para lisatr topico
     @GetMapping("/listar-topicos")
     public ResponseEntity<Page<DatosListaTopico>> listarTopicos(@PageableDefault(size = 10) Pageable pageable) {
         Page<Topico> topicos = topicoRepository.findByActivoTrue(pageable);
@@ -81,45 +82,29 @@ public class TopicoController {
         return ResponseEntity.ok(datosListaTopicoPage);
     }
 
-    @PutMapping("/actualizar-topico/{id}")
+
+    //metodo para ctualizar topico
+    @PutMapping("/actualizar-topico")
     @Transactional
-    public ResponseEntity<DatosRespuestaTopico> actualizarTopico(@PathVariable Long id,
-                                                                 @Valid @RequestBody DatosRegistroTopico datosRegistroTopico) {
-        // Buscar el tópico a actualizar
-        Topico topico = topicoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tópico no encontrado con ID: " + id));
-
-        // Verificar si se está intentando cambiar el título o mensaje a uno ya existente
-        if (!topico.getTitulo().equals(datosRegistroTopico.titulo())
-                || !topico.getMensaje().equals(datosRegistroTopico.mensaje())) {
-            if (topicoRepository.existsByTituloAndMensaje(datosRegistroTopico.titulo(), datosRegistroTopico.mensaje())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-        }
-
-        // Actualizar los datos del tópico
-        topico.setTitulo(datosRegistroTopico.titulo());
-        topico.setMensaje(datosRegistroTopico.mensaje());
-        topico.setAutor(datosRegistroTopico.autor());
-
-        // Guardar el tópico actualizado en la base de datos
-        topico = topicoRepository.save(topico);
-
-        // Construir la respuesta de datos
-        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(
-                topico.getId(),
-                topico.getTitulo(),
-                topico.getMensaje(),
-                topico.getFechaCreacion(),
-                topico.getStatus(),
-                topico.getAutor()
-        );
-
-        // Retornar una respuesta con estado OK (200) y los datos del tópico actualizado
-        return ResponseEntity.ok(datosRespuestaTopico);
+    public ResponseEntity actualizarTopico(@RequestBody @Valid DatosActualizarTopico datosActualizarTopico) {
+        Topico topico=topicoRepository.getReferenceById(datosActualizarTopico.id());
+        topico.actualizarDatos(datosActualizarTopico);
+        return ResponseEntity.ok(new DatosActualizarTopico(topico.getId(),topico.getTitulo(),topico.getMensaje(),topico.getFechaCreacion(),
+                topico.getStatus(),topico.getAutor(),topico.getCurso().getId()));
     }
-}
 
+    //metodo para elimiar topico
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity elimiarTopico(@PathVariable Long id){
+        Topico topico=topicoRepository.getReferenceById(id);
+        topico.desactivarTopico();
+        return ResponseEntity.noContent().build();
+    }
+
+
+}
 
    /*
     @GetMapping("/listar-topico")

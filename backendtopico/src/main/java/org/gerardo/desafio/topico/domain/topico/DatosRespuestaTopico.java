@@ -20,28 +20,5 @@ public class DatosRespuestaTopico {
         this.autor = autor;
     }
 
-    // Getters (y opcionalmente setters si es necesario)
-    public Long getId() {
-        return id;
-    }
 
-    public String getTitulo() {
-        return titulo;
-    }
-
-    public String getMensaje() {
-        return mensaje;
-    }
-
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getAutor() {
-        return autor;
-    }
 }

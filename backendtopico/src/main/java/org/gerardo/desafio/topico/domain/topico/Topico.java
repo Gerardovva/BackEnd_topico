@@ -42,4 +42,23 @@ public class Topico {
         this.autor = datosRegistroTopico.autor();
         this.curso = curso; // Asignar el curso proporcionado
     }
+
+    //metodo para actualizar datos
+    public void actualizarDatos(DatosActualizarTopico datosActualizarTopico) {
+        if (datosActualizarTopico.titulo() != null) {
+            this.titulo = datosActualizarTopico.titulo();
+        }
+        if (datosActualizarTopico.mensaje() != null) {
+            this.mensaje = datosActualizarTopico.mensaje();
+        }
+        if (datosActualizarTopico.autor() != null) {
+            this.autor = datosActualizarTopico.autor();
+        }
+
+
+    }
+
+    public void desactivarTopico() {
+        this.activo = false;
+    }
 }
