@@ -1,74 +1,124 @@
 package org.gerardo.desafio.topico.controller;
 
-
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.gerardo.desafio.topico.domain.curso.Curso;
 import org.gerardo.desafio.topico.domain.curso.CursoRepository;
 import org.gerardo.desafio.topico.domain.topico.*;
-import org.gerardo.desafio.topico.infra.ResourceNotFoundException;
+
+
+import org.gerardo.desafio.topico.infra.errores.ValidacionDeIntegridad;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+
 import java.net.URI;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/topicos")
+@Validated
 public class TopicoController {
 
-
-
-    @Autowired
-    private CursoRepository cursoRepository;
+    private final CursoRepository cursoRepository;
+    private final TopicoRepository topicoRepository;
 
     @Autowired
-    private TopicoRepository topicoRepository;
-
+    public TopicoController(CursoRepository cursoRepository, TopicoRepository topicoRepository) {
+        this.cursoRepository = cursoRepository;
+        this.topicoRepository = topicoRepository;
+    }
 
     @PostMapping("/crear-topico")
-    public ResponseEntity<DatosRespuestaTopico> registrarTopico(@RequestBody @Valid DatosRegistroTopico datosRegistroTopico,
+    @Transactional
+    public ResponseEntity<DatosRespuestaTopico> registrarTopico(@Valid @RequestBody DatosRegistroTopico datosRegistroTopico,
                                                                 UriComponentsBuilder uriComponentsBuilder) {
+        // Check if a topic with the same title and message already exists
+        if (topicoRepository.existsByTituloAndMensaje(datosRegistroTopico.titulo(), datosRegistroTopico.mensaje())) {
+            // Return a conflict response or throw an exception
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un tópico con el mismo título y mensaje");
+        }
 
-        // Primero, obtenemos el curso asociado al tópico
+        // Proceed with saving the new topic
         Curso curso = cursoRepository.findById(datosRegistroTopico.idCurso())
-                .orElseThrow(() -> new ResourceNotFoundException("Curso no encontrado con ID: " + datosRegistroTopico.idCurso()));
+                .orElseThrow(() -> new ValidacionDeIntegridad("Curso no encontrado con ID: " + datosRegistroTopico.idCurso()));
 
-        // Creamos una instancia de Topico usando el constructor que acepta DatosRegistroTopico y Curso
         Topico nuevoTopico = new Topico(datosRegistroTopico, curso);
+        nuevoTopico.setFechaCreacion(LocalDateTime.now());
+        nuevoTopico.setStatus("Activo");
+        nuevoTopico.setActivo(true);
 
-        // Guardamos el nuevo tópico en la base de datos
         nuevoTopico = topicoRepository.save(nuevoTopico);
 
-        // Creamos la respuesta de datos
-        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(nuevoTopico.getId(), nuevoTopico.getTitulo(),
-                nuevoTopico.getMensaje(), nuevoTopico.getFechaCreacion(), nuevoTopico.getStatus(), nuevoTopico.getAutor());
+        // Construct response data
+        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(
+                nuevoTopico.getId(),
+                nuevoTopico.getTitulo(),
+                nuevoTopico.getMensaje(),
+                nuevoTopico.getFechaCreacion(),
+                nuevoTopico.getStatus(),
+                nuevoTopico.getAutor()
+        );
 
-        // Construimos la URL de la respuesta
         URI url = uriComponentsBuilder.path("/topicos/{id}").buildAndExpand(nuevoTopico.getId()).toUri();
 
-        // Retornamos una respuesta con estado CREATED (201) y la URL de la ubicación del nuevo recurso
         return ResponseEntity.created(url).body(datosRespuestaTopico);
     }
 
+    @GetMapping("/listar-topicos")
+    public ResponseEntity<Page<DatosListaTopico>> listarTopicos(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Topico> topicos = topicoRepository.findByActivoTrue(pageable);
+        Page<DatosListaTopico> datosListaTopicoPage = topicos.map(DatosListaTopico::new);
+        return ResponseEntity.ok(datosListaTopicoPage);
+    }
 
-        @GetMapping("/listar-topico")
-        public ResponseEntity<Page<DatosListaTopico>> listadoTopicos(@PageableDefault(size = 10) Pageable pageable) {
+    @PutMapping("/actualizar-topico/{id}")
+    @Transactional
+    public ResponseEntity<DatosRespuestaTopico> actualizarTopico(@PathVariable Long id,
+                                                                 @Valid @RequestBody DatosRegistroTopico datosRegistroTopico) {
+        // Buscar el tópico a actualizar
+        Topico topico = topicoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Tópico no encontrado con ID: " + id));
 
-            return ResponseEntity.ok(topicoRepository.findByActivoTrue(pageable).map(DatosListaTopico::new));
+        // Verificar si se está intentando cambiar el título o mensaje a uno ya existente
+        if (!topico.getTitulo().equals(datosRegistroTopico.titulo())
+                || !topico.getMensaje().equals(datosRegistroTopico.mensaje())) {
+            if (topicoRepository.existsByTituloAndMensaje(datosRegistroTopico.titulo(), datosRegistroTopico.mensaje())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
         }
 
+        // Actualizar los datos del tópico
+        topico.setTitulo(datosRegistroTopico.titulo());
+        topico.setMensaje(datosRegistroTopico.mensaje());
+        topico.setAutor(datosRegistroTopico.autor());
 
+        // Guardar el tópico actualizado en la base de datos
+        topico = topicoRepository.save(topico);
 
-    @PutMapping("/actualizar-topico")
-    public ResponseEntity actualizar() {
-        return null;
+        // Construir la respuesta de datos
+        DatosRespuestaTopico datosRespuestaTopico = new DatosRespuestaTopico(
+                topico.getId(),
+                topico.getTitulo(),
+                topico.getMensaje(),
+                topico.getFechaCreacion(),
+                topico.getStatus(),
+                topico.getAutor()
+        );
+
+        // Retornar una respuesta con estado OK (200) y los datos del tópico actualizado
+        return ResponseEntity.ok(datosRespuestaTopico);
     }
 }
-
 
 
    /*
@@ -99,4 +149,7 @@ public class TopicoController {
 
         return ResponseEntity.ok().body(datosListaTopicos);
     }*/
+
+
+
 

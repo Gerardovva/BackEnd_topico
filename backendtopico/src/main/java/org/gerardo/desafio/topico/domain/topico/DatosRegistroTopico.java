@@ -2,7 +2,6 @@ package org.gerardo.desafio.topico.domain.topico;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.gerardo.desafio.topico.domain.curso.Curso;
 
 import java.time.LocalDateTime;
 
@@ -15,18 +14,18 @@ public record DatosRegistroTopico(
         @NotBlank
         String mensaje,
 
+        @NotNull
         LocalDateTime fechaCreacion,
 
+        @NotNull
         @NotBlank
         String status,
 
-
+        @NotNull
+        @NotBlank
         String autor,
 
         @NotNull
         Long idCurso
-
-
-
 ) {
 }
