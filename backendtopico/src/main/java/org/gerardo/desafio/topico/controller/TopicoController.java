@@ -106,35 +106,3 @@ public class TopicoController {
 
 }
 
-   /*
-    @GetMapping("/listar-topico")
-    public ResponseEntity<List<DatosListaTopico>> listaTopicos() {
-        // Implementa la lógica para obtener una lista de tópicos y retornarla en una ResponseEntity
-        List<Topico> topicos = topicoRepository.findAll();
-        List<DatosListaTopico> datosListaTopicos = topicos.stream()
-                .map(topico -> new DatosListaTopico(topico.getId(),topico.getMensaje(), topico.getTitulo(),topico.getFechaCreacion(), topico.getMensaje()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok().body(datosListaTopicos);
-    } */
-
-   /* @GetMapping("/listar-topico")
-    public ResponseEntity<Page<DatosListaTopico>> listaTopicos(@PageableDefault(size = 10) Pageable pageable) {
-        Page<Topico> topicosPage = topicoRepository.findAll(pageable);
-
-        // Mapear los tópicos de la página a DatosListaTopico
-        Page<DatosListaTopico> datosListaTopicos = topicosPage.map(topico ->
-                new DatosListaTopico(
-                        topico.getId(),
-                        topico.getTitulo(),
-                        topico.getMensaje(),
-                        topico.getFechaCreacion(),
-                        topico.getAutor()
-                )
-        );
-
-        return ResponseEntity.ok().body(datosListaTopicos);
-    }*/
-
-
-
-
