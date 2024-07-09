@@ -17,28 +17,49 @@ import java.io.IOException;
 @Component
 public class SecurytyFilter extends OncePerRequestFilter  {
 
+    private final UsuarioRepository usuarioRepository;
+    private final TokenService tokenService;
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    public SecurytyFilter(UsuarioRepository usuarioRepository, TokenService tokenService) {
+        this.usuarioRepository = usuarioRepository;
+        this.tokenService = tokenService;
+    }
 
-    @Autowired
-    private TokenService tokenService;
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //obtener el token de header
-        String authHeader = request.getHeader("Authorization");//.replace("Bearer ","");
-        if (authHeader != null) {
-            var token = authHeader.replace("Bearer ", "");
-            var nombreUsuario = tokenService.getSubject(token);
+        // Obtener el token del encabezado Authorization
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // Si no hay token o no empieza con "Bearer ", no se autentica
+            handleUnauthorized(request, response); // Manejar no autorizado
+            return;
+        }
+
+        try {
+            String token = authHeader.substring(7); // Eliminar "Bearer " del token
+            String nombreUsuario = tokenService.getSubject(token);
             if (nombreUsuario != null) {
                 var usuario = usuarioRepository.findByLogin(nombreUsuario);
-                Authentication authentication = new UsernamePasswordAuthenticationToken(usuario, null,
-                        usuario.getAuthorities()); //forzamos el inicio de sesion
+                Authentication authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                handleUnauthorized(request, response); // Manejar no autorizado si no se puede validar el token
+                return;
             }
+        } catch (Exception e) {
+            handleUnauthorized(request, response); // Manejar no autorizado en caso de excepción
+            return;
         }
-        filterChain.doFilter(request, response);
 
+        filterChain.doFilter(request, response);
+    }
+
+    private void handleUnauthorized(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.getWriter().write("No tiene autorización para acceder a este recurso.");
     }
 }
